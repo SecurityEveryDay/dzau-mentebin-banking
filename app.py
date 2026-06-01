@@ -9,6 +9,34 @@ from datetime import date, datetime, timedelta
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 
+# ============================================================================
+# AMBIENTE DIDÁTICO PROPOSITALMENTE INSEGURO — NÃO USAR EM PRODUÇÃO
+# ============================================================================
+# Esta aplicação contém vulnerabilidades intencionais usadas em sala de aula
+# para demonstrar a tríade CIA (Confidencialidade, Integridade,
+# Disponibilidade) e categorias do OWASP Top 10.
+#
+# VULNERABILIDADES INTENCIONAIS (procure por <<< VULNERABILIDADE >>>):
+#   1. IDOR em GET /conta?id=           → Confidencialidade  (A01)
+#   2. SQL Injection em POST /login     → Confidencialidade  (A03)
+#   3. Parameter Tampering em /recarga  → Integridade        (A04)
+#   4. Indisponibilidade em /pix        → Disponibilidade    (demo CIA)
+#
+# OUTRAS FALHAS PRESENTES (não exploradas em aula, mas dignas de discussão):
+#   - Senhas em texto plano (usuarios.txt + tabela usuarios)
+#       → Correto: hash com bcrypt/argon2/scrypt + salt único por usuário.
+#   - secret_key hardcoded e curta; sessão Flask é só assinada (não cifrada)
+#       → Correto: secret_key longa via os.urandom(32), lida de env var.
+#   - Sem proteção CSRF nos formulários POST (/cadastro, /recarga, ...)
+#       → Correto: Flask-WTF + CSRFProtect, ou tokens manuais.
+#   - Sem rate limiting no /login — brute force trivial
+#       → Correto: Flask-Limiter, fail2ban, WAF, captcha após N falhas.
+#   - X-Forwarded-For lido sem validar proxy de origem
+#       → Correto: ProxyFix do Werkzeug atrás de proxy reverso confiável.
+#   - debug=True (Werkzeug debugger expõe RCE se PIN for descoberto)
+#       → Correto: gunicorn/uwsgi em produção, debug=False.
+# ============================================================================
+
 app = Flask(__name__)
 app.secret_key = "chave-de-exemplo-aula-idor"
 
@@ -252,7 +280,28 @@ def login():
         raw_id = request.form.get("id", "")
         senha  = request.form.get("senha", "")
 
-        # <<< VULNERABILIDADE: SQL Injection — concatenação direta na query >>>
+        # =================================================================
+        # <<< VULNERABILIDADE: SQL INJECTION — OWASP A03:2021 (Injection) >>>
+        # -----------------------------------------------------------------
+        # A query é montada por concatenação direta de strings com o input
+        # do usuário. Payloads como `1004' --` ou `' OR '1'='1' --` quebram
+        # a lógica do WHERE e permitem bypass de autenticação.
+        #
+        # COMO CORRIGIR — usar prepared statement com bind de parâmetros:
+        #
+        #   sql = "SELECT id, nome FROM usuarios WHERE id = ? AND senha = ?"
+        #   with _db_lock:
+        #       row = DB.execute(sql, (raw_id, senha)).fetchone()
+        #
+        # O driver do SQLite (ou qualquer DB-API) escapa os valores ao fazer
+        # o bind, eliminando a injeção independente do conteúdo do input.
+        #
+        # Defesa em profundidade adicional:
+        #   - usar ORM (SQLAlchemy) que parametriza queries por padrão
+        #   - armazenar hash de senha (bcrypt/argon2), nunca senha em claro
+        #   - princípio de menor privilégio no usuário do banco
+        #   - rate limiting + WAF + logs de auditoria
+        # =================================================================
         sql = (
             "SELECT id, nome FROM usuarios "
             "WHERE id = '" + raw_id + "' AND senha = '" + senha + "'"
@@ -335,11 +384,28 @@ def logout():
     return redirect(url_for("login"))
 
 
-# ============================================================
-# Endpoint VULNERÁVEL a IDOR
-# Recebe o ID pela query string e devolve a conta sem
-# verificar se o ID corresponde ao usuário autenticado.
-# ============================================================
+# =====================================================================
+# <<< VULNERABILIDADE: IDOR — OWASP A01:2021 (Broken Access Control) >>>
+# ---------------------------------------------------------------------
+# Insecure Direct Object Reference. O endpoint usa o `id` recebido na
+# query string sem verificar se ele pertence ao usuário autenticado na
+# sessão. Atacante logado troca `?id=` por qualquer outro ID e acessa
+# contas alheias (dados pessoais, saldo, transações).
+#
+# COMO CORRIGIR — validar autorização antes de devolver o recurso:
+#
+#   if id_consultado != session["usuario_id"]:
+#       abort(403)
+#
+# Ou, mais expressivo, ignorar o ID da URL e usar apenas o da sessão:
+#
+#   usuario = USUARIOS.get(session["usuario_id"])
+#
+# Defesa em profundidade adicional:
+#   - usar identificadores não enumeráveis (UUIDs no lugar de IDs sequenciais)
+#   - decorator centralizado de autorização (ex.: @requires_owner)
+#   - registrar tentativas de acesso a recursos de terceiros (detecção)
+# =====================================================================
 @app.route("/conta")
 def conta():
     if "usuario_id" not in session:
@@ -352,6 +418,7 @@ def conta():
         return redirect(url_for("login"))
 
     # <<< VULNERABILIDADE: nenhum check de autorização aqui >>>
+    # (veja bloco acima para a correção)
     usuario = USUARIOS.get(id_consultado)
 
     if usuario is None:
@@ -360,6 +427,25 @@ def conta():
     return render_template("conta.html", usuario=usuario, id_consultado=id_consultado)
 
 
+# =====================================================================
+# Demonstração do pilar CIA: DISPONIBILIDADE
+# ---------------------------------------------------------------------
+# Não é uma vulnerabilidade explorável — é uma indisponibilidade
+# intencional usada para discutir o pilar A da tríade CIA. Em sistemas
+# reais a perda de disponibilidade pode vir de DDoS, falha de capacity
+# planning, dependência externa caída, deploys mal feitos, etc.
+#
+# HTTP 503 (Service Unavailable) é o código correto para indicar
+# indisponibilidade temporária — clientes/CDNs sabem que podem tentar
+# de novo. Em produção, vir acompanhado do header `Retry-After`.
+#
+# Como mitigar perda de disponibilidade:
+#   - redundância (múltiplas instâncias, multi-AZ/multi-região)
+#   - circuit breakers e fallback para serviços degradados
+#   - autoscaling baseado em métricas
+#   - SLOs/SLAs claros e medidos (ex.: 99.9% = ~8h indisponível/ano)
+#   - rate limiting / DDoS protection (Cloudflare, AWS Shield, ...)
+# =====================================================================
 @app.route("/pix")
 def pix():
     if "usuario_id" not in session:
@@ -389,10 +475,34 @@ def recarga():
             flash("Informe o número do celular.", "erro")
             return render_template("recarga.html", usuario=usuario)
 
-        # <<< VULNERABILIDADE: o servidor confia no total_pagar enviado >>>
-        # pelo cliente em vez de recalcular pelo valor_credito.
-        # O CORRETO seria:
-        #   total_pagar = valor_credito  (ou consultar tabela de preços)
+        # =================================================================
+        # <<< VULNERABILIDADE: PARAMETER TAMPERING — OWASP A04:2021 >>>
+        # Pilar CIA: INTEGRIDADE
+        # -----------------------------------------------------------------
+        # O servidor confia no `total_pagar` enviado pelo cliente em vez
+        # de recalcular o preço a partir do `valor_credito`. Atacante
+        # intercepta o POST (Burp), mantém `valor_credito=100` e troca
+        # `total_pagar=0.01` — recebe R$ 100 de crédito pagando R$ 0,01.
+        #
+        # COMO CORRIGIR — ignorar o total_pagar do cliente e recalcular
+        # server-side a partir de uma tabela de preços autorizada:
+        #
+        #   PRECOS = {20: 20.00, 30: 30.00, 50: 50.00, 100: 100.00, 200: 200.00}
+        #   if int(valor_credito) not in PRECOS:
+        #       abort(400)
+        #   total_pagar = PRECOS[int(valor_credito)]
+        #
+        # Princípio: NUNCA confie em dados controláveis pelo cliente para
+        # decisões de segurança ou financeiras. Qualquer cálculo de preço,
+        # papel/role, permissão, deve ser feito ou validado no servidor.
+        #
+        # Defesa em profundidade adicional:
+        #   - validar saldo suficiente antes de processar
+        #   - idempotência (token único por transação)
+        #   - HMAC no payload (defesa secundária, não substitui validação)
+        #   - alertas para divergências (já implementado em /admin/logs:
+        #     recargas com valor_credito != total_pagar viram badge ⚠)
+        # =================================================================
         with _lock:
             usuario["saldo"] = round(usuario["saldo"] - total_pagar, 2)
             usuario["transacoes"].insert(0, {
