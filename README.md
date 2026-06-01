@@ -244,20 +244,3 @@ docker compose up -d
 ```
 
 Ou simplesmente apague `logs.txt` para zerar o painel sem perder os cadastros.
-
----
-
-## Roteiro sugerido para uma aula de ~50 minutos
-
-1. **Abertura (5 min)** — apresentar a aplicação como um banco real e a tríade
-   CIA.
-2. **IDOR (15 min)** — login com 1001, troca de `?id=`, discussão sobre
-   Broken Access Control (OWASP A01:2021) e como prevenir.
-3. **SQL Injection (15 min)** — bypass com `1004' --`, encadeamento com IDOR,
-   discussão sobre prepared statements / parameter binding.
-4. **Parameter Tampering (10 min)** — recarga com Burp, integridade,
-   server-side validation, princípio "nunca confie no cliente".
-5. **Indisponibilidade (3 min)** — clicar em Pix, discutir o pilar A.
-6. **Detecção (2 min)** — abrir o painel admin como Ana Diretora, mostrar
-   `recarga ⚠`, brute-force aparecendo em `login_falha`, IDOR aparecendo em
-   `path = /conta?id=...`.
