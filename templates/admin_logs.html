@@ -15,6 +15,28 @@
     .badge-info  { background:#dbeafe; color:#1e40af; }
     .badge-warn  { background:#fef3c7; color:#92400e; }
     .mute        { color:#9ca3af; }
+
+    .ip-real, .ip-mascara {
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 0.9rem;
+    }
+    .ip-real    { display: none; }
+    .ip-mascara { color: #9ca3af; }
+    body.mostrar-ip .ip-real    { display: inline; }
+    body.mostrar-ip .ip-mascara { display: none; }
+
+    .btn-toggle-ip {
+        background: #1f2937;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+        width: auto;
+        margin-top: 0;
+    }
+    .btn-toggle-ip:hover { background: #111827; }
     select {
         padding: 0.6rem 0.8rem;
         font-size: 1rem;
@@ -61,6 +83,10 @@
             </a>
         </div>
     </form>
+
+    <div style="margin-top:1rem; text-align:right;">
+        <button type="button" id="btn-toggle-ip" class="btn-toggle-ip">Mostrar IP</button>
+    </div>
 </div>
 
 <div class="card" style="padding:0; overflow:auto;">
@@ -73,6 +99,7 @@
                 <th>Método</th>
                 <th>URL</th>
                 <th>IP</th>
+                <th>Localização</th>
             </tr>
         </thead>
         <tbody>
@@ -121,10 +148,23 @@
                         {{ l.path or "—" }}
                     {% endif %}
                 </td>
-                <td style="color:#6b7280; font-size:0.9rem;">{{ l.ip }}</td>
+                <td>
+                    <span class="ip-mascara">oculto</span>
+                    <span class="ip-real">{{ l.ip }}</span>
+                </td>
+                <td style="color:#4b5563; font-size:0.9rem;">
+                    {% set geo = geo_by_ip.get(l.ip) %}
+                    {% if geo and geo.interna %}
+                        <span class="mute">rede interna</span>
+                    {% elif geo and geo.country %}
+                        {% if geo.city %}{{ geo.city }}, {% endif %}{{ geo.country }}
+                    {% else %}
+                        <span class="mute">—</span>
+                    {% endif %}
+                </td>
             </tr>
             {% else %}
-            <tr><td colspan="6" style="text-align:center; padding:2rem; color:#9ca3af;">Sem registros.</td></tr>
+            <tr><td colspan="7" style="text-align:center; padding:2rem; color:#9ca3af;">Sem registros.</td></tr>
             {% endfor %}
         </tbody>
     </table>
@@ -138,5 +178,14 @@
         Apagar logs
     </button>
 </form>
+
+<script>
+    const btnIp = document.getElementById('btn-toggle-ip');
+    btnIp.addEventListener('click', () => {
+        document.body.classList.toggle('mostrar-ip');
+        btnIp.textContent = document.body.classList.contains('mostrar-ip')
+            ? 'Ocultar IP' : 'Mostrar IP';
+    });
+</script>
 
 {% endblock %}

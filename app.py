@@ -1,8 +1,10 @@
+import ipaddress
 import json
 import os
 import random
 import sqlite3
 import threading
+import urllib.request
 from datetime import date, datetime, timedelta
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash
@@ -14,9 +16,74 @@ ARQUIVO_USUARIOS = os.path.join(os.path.dirname(__file__), "usuarios.txt")
 ARQUIVO_LOGS     = os.path.join(os.path.dirname(__file__), "logs.txt")
 ARQUIVO_DB       = os.path.join(os.path.dirname(__file__), "banco.db")
 
-_lock = threading.Lock()
+_lock     = threading.Lock()
 _log_lock = threading.Lock()
-_db_lock = threading.Lock()
+_db_lock  = threading.Lock()
+_geo_lock = threading.Lock()
+
+_geo_cache = {}
+
+
+def _ip_privado(ip):
+    try:
+        addr = ipaddress.ip_address(ip)
+        return addr.is_private or addr.is_loopback or addr.is_link_local
+    except (ValueError, TypeError):
+        return False
+
+
+def geolocate_batch(ips):
+    """Resolve cidade/país para os IPs informados, usando cache + ip-api.com.
+
+    Retorna dict {ip: {"interna": bool, "country": str|None, "city": str|None}}
+    """
+    resultado = {}
+    a_consultar = []
+
+    for ip in set(ips):
+        if not ip:
+            continue
+        with _geo_lock:
+            if ip in _geo_cache:
+                resultado[ip] = _geo_cache[ip]
+                continue
+        if _ip_privado(ip):
+            entrada = {"interna": True, "country": None, "city": None}
+            with _geo_lock:
+                _geo_cache[ip] = entrada
+            resultado[ip] = entrada
+        else:
+            a_consultar.append(ip)
+
+    if a_consultar:
+        try:
+            body = json.dumps([
+                {"query": ip, "fields": "status,country,city,query"}
+                for ip in a_consultar
+            ]).encode()
+            req = urllib.request.Request(
+                "http://ip-api.com/batch",
+                data=body,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                respostas = json.loads(resp.read().decode())
+        except Exception:
+            respostas = []
+
+        respostas_por_ip = {r.get("query"): r for r in respostas if isinstance(r, dict)}
+        for ip in a_consultar:
+            r = respostas_por_ip.get(ip, {})
+            if r.get("status") == "success":
+                entrada = {"interna": False, "country": r.get("country"), "city": r.get("city")}
+            else:
+                entrada = {"interna": False, "country": None, "city": None}
+            with _geo_lock:
+                _geo_cache[ip] = entrada
+            resultado[ip] = entrada
+
+    return resultado
 
 
 def is_admin(uid):
@@ -373,12 +440,15 @@ def admin_logs():
     if filtro_evento:
         logs = [l for l in logs if l.get("evento") == filtro_evento]
 
+    geo_by_ip = geolocate_batch([l.get("ip") for l in logs])
+
     return render_template(
         "admin_logs.html",
         logs=logs,
         filtro_user=filtro_user,
         filtro_path=filtro_path,
         filtro_evento=filtro_evento,
+        geo_by_ip=geo_by_ip,
     )
 
 
