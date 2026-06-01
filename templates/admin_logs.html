@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<style>
+    .badge {
+        display: inline-block;
+        padding: 0.2rem 0.6rem;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .badge-ok    { background:#d1fae5; color:#065f46; }
+    .badge-fail  { background:#fee2e2; color:#991b1b; }
+    .badge-info  { background:#dbeafe; color:#1e40af; }
+    .badge-warn  { background:#fef3c7; color:#92400e; }
+    .mute        { color:#9ca3af; }
+    select {
+        padding: 0.6rem 0.8rem;
+        font-size: 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        width: 100%;
+        margin-top: 0.4rem;
+        background: #fff;
+    }
+</style>
+
+<div class="card">
+    <h2 style="margin-top:0;">Painel administrativo &mdash; Logs de acesso</h2>
+    <p style="color:#6b7280; margin-top:-0.5rem;">
+        {{ logs|length }} registro(s) exibido(s) &middot; mais recentes primeiro
+    </p>
+
+    <form method="get" style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:end;">
+        <div style="flex:1; min-width:140px;">
+            <label>Filtrar por ID</label>
+            <input type="text" name="user_id" value="{{ filtro_user }}" placeholder="ex.: 1002">
+        </div>
+        <div style="flex:2; min-width:180px;">
+            <label>Filtrar por URL</label>
+            <input type="text" name="path" value="{{ filtro_path }}" placeholder="ex.: /conta">
+        </div>
+        <div style="flex:1; min-width:160px;">
+            <label>Filtrar por evento</label>
+            <select name="evento">
+                <option value="">— todos —</option>
+                <option value="login_sucesso" {% if filtro_evento == "login_sucesso" %}selected{% endif %}>login_sucesso</option>
+                <option value="login_falha"   {% if filtro_evento == "login_falha"   %}selected{% endif %}>login_falha</option>
+                <option value="cadastro"      {% if filtro_evento == "cadastro"      %}selected{% endif %}>cadastro</option>
+                <option value="recarga"       {% if filtro_evento == "recarga"       %}selected{% endif %}>recarga</option>
+            </select>
+        </div>
+        <div style="flex:0 0 auto;">
+            <button type="submit" style="margin-top:0;">Filtrar</button>
+        </div>
+        <div style="flex:0 0 auto;">
+            <a href="{{ url_for('admin_logs') }}"
+               style="display:inline-block; padding:0.6rem 0.8rem; border:1px solid #d1d5db; border-radius:6px; text-decoration:none; color:#1f2937;">
+               Limpar filtros
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="padding:0; overflow:auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>Data/hora</th>
+                <th>Evento</th>
+                <th>Usuário</th>
+                <th>Método</th>
+                <th>URL</th>
+                <th>IP</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for l in logs %}
+            <tr>
+                <td style="white-space:nowrap;">{{ l.ts }}</td>
+                <td>
+                    {% if l.evento == "login_sucesso" %}
+                        <span class="badge badge-ok">login ok</span>
+                    {% elif l.evento == "login_falha" %}
+                        <span class="badge badge-fail">login falhou</span>
+                    {% elif l.evento == "cadastro" %}
+                        <span class="badge badge-info">cadastro</span>
+                    {% elif l.evento == "recarga" %}
+                        {% if l.valor_credito != l.total_pagar %}
+                            <span class="badge badge-warn" title="valor_credito ≠ total_pagar">recarga ⚠</span>
+                        {% else %}
+                            <span class="badge badge-info">recarga</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="mute">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if l.user_id %}
+                        <b>{{ l.user_id }}</b>{% if l.nome %} &mdash; {{ l.nome }}{% endif %}
+                    {% elif l.tentativa_id_invalido is defined %}
+                        <span class="mute">tentativa: {{ l.tentativa_id_invalido }}</span>
+                    {% else %}
+                        <span class="mute">anônimo</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if l.method %}
+                        <code style="background:#e5e7eb; color:#1f2937; padding:0.1rem 0.4rem; border-radius:4px;">{{ l.method }}</code>
+                    {% else %}
+                        <span class="mute">—</span>
+                    {% endif %}
+                </td>
+                <td style="font-family: ui-monospace, Consolas, monospace; font-size: 0.9rem;">
+                    {% if l.evento == "recarga" %}
+                        cel {{ l.numero }} ·
+                        crédito <b>R$ {{ "%.2f"|format(l.valor_credito) }}</b> ·
+                        pago <b>R$ {{ "%.2f"|format(l.total_pagar) }}</b>
+                    {% else %}
+                        {{ l.path or "—" }}
+                    {% endif %}
+                </td>
+                <td style="color:#6b7280; font-size:0.9rem;">{{ l.ip }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" style="text-align:center; padding:2rem; color:#9ca3af;">Sem registros.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<form method="post" action="{{ url_for('admin_logs_limpar') }}"
+      onsubmit="return confirm('Apagar todos os logs?');"
+      style="text-align:right;">
+    <button type="submit"
+            style="background:#b91c1c; width:auto; padding:0.5rem 1rem; font-size:0.9rem;">
+        Apagar logs
+    </button>
+</form>
+
+{% endblock %}

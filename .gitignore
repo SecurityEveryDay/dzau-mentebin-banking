@@ -1,0 +1,20 @@
+# Artefatos de runtime
+logs.txt
+banco.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# IDE / OS
+.vscode/
+.idea/
+.claude/
+.DS_Store
+Thumbs.db
+
+# Backup do ícone na raiz (já temos em static/)
+/icon_1.png

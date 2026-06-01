@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="card" style="max-width: 480px; margin: 3rem auto;">
+    <h2 style="text-align:center;">Abrir conta no MenteBinaria Banking</h2>
+    <form method="post">
+        <label>Nome completo</label>
+        <input type="text" name="nome" required autofocus>
+
+        <label>CPF</label>
+        <input type="text" name="cpf" required placeholder="000.000.000-00">
+
+        <label>E-mail</label>
+        <input type="email" name="email" required>
+
+        <label>Senha</label>
+        <input type="password" name="senha" required>
+
+        <label>Confirmar senha</label>
+        <input type="password" name="senha_confirma" required>
+
+        <button type="submit">Criar conta</button>
+    </form>
+    <a class="link-secundario" href="{{ url_for('login') }}">Já tenho conta — entrar</a>
+</div>
+{% endblock %}

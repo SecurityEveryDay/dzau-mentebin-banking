@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<style>
+    .valores-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+    }
+    .valor-opcao {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        background: #fff;
+    }
+    .valor-opcao input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+    .valor-opcao:hover { border-color: #93c5fd; }
+    .valor-opcao.selecionada {
+        border-color: #2563eb;
+        background: #eff6ff;
+        color: #1e40af;
+    }
+    .resumo {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: #f9fafb;
+        border-radius: 6px;
+        font-size: 1.1rem;
+    }
+    .resumo .total {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #047857;
+    }
+</style>
+
+<div class="card" style="max-width:560px; margin:0 auto;">
+    <h2 style="margin-top:0;">Recarga de celular</h2>
+    <p style="color:#6b7280; margin-top:-0.5rem;">
+        Saldo disponível: <b>R$ {{ "%.2f"|format(usuario.saldo)|replace(".", ",") }}</b>
+    </p>
+
+    <form method="post" id="form-recarga">
+        <label>Número do celular</label>
+        <input type="tel" name="numero" required placeholder="(11) 99999-9999">
+
+        <label style="margin-top:1.2rem; display:block;">Valor da recarga</label>
+        <div class="valores-grid">
+            {% for v in [20, 30, 50, 100, 200] %}
+            <label class="valor-opcao" data-valor="{{ v }}">
+                <input type="radio" name="valor_credito" value="{{ v }}" required>
+                R$ {{ v }}
+            </label>
+            {% endfor %}
+        </div>
+
+        <div class="resumo">
+            <span>Total a pagar</span>
+            <span class="total" id="total-display">R$ 0,00</span>
+        </div>
+        <input type="hidden" name="total_pagar" id="total-pagar" value="0">
+
+        <button type="submit">Pagar</button>
+    </form>
+</div>
+
+<script>
+    const opcoes        = document.querySelectorAll('.valor-opcao');
+    const inputTotal    = document.getElementById('total-pagar');
+    const displayTotal  = document.getElementById('total-display');
+
+    opcoes.forEach(opcao => {
+        opcao.addEventListener('click', () => {
+            opcoes.forEach(o => o.classList.remove('selecionada'));
+            opcao.classList.add('selecionada');
+            opcao.querySelector('input').checked = true;
+
+            const v = parseFloat(opcao.dataset.valor);
+            inputTotal.value = v.toFixed(2);
+            displayTotal.textContent = 'R$ ' + v.toFixed(2).replace('.', ',');
+        });
+    });
+</script>
+
+{% endblock %}

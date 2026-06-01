@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+{% if usuario %}
+<div class="card">
+    <h2>Dados da Conta</h2>
+    <table>
+        <tr><th>Número de cliente</th><td>{{ usuario.id }}</td></tr>
+        <tr><th>Nome</th><td>{{ usuario.nome }}</td></tr>
+        <tr><th>CPF</th><td>{{ usuario.cpf }}</td></tr>
+        <tr><th>E-mail</th><td>{{ usuario.email }}</td></tr>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Saldo disponível</h2>
+    <p class="saldo">R$ {{ "%.2f"|format(usuario.saldo)|replace(".", ",") }}</p>
+</div>
+
+<div class="card">
+    <h2>Histórico de transações</h2>
+    <table>
+        <thead>
+            <tr><th>Data</th><th>Descrição</th><th>Valor</th></tr>
+        </thead>
+        <tbody>
+            {% for t in usuario.transacoes %}
+            <tr>
+                <td>{{ t.data }}</td>
+                <td>{{ t.descricao }}</td>
+                <td class="{{ 'valor-pos' if t.valor >= 0 else 'valor-neg' }}">
+                    R$ {{ "%.2f"|format(t.valor)|replace(".", ",") }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card erro">
+    Conta não encontrada.
+</div>
+{% endif %}
+
+{% endblock %}

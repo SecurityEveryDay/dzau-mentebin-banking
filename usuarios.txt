@@ -1,0 +1,108 @@
+[
+  {
+    "id": 1001,
+    "senha": "senha123",
+    "nome": "João Silva",
+    "cpf": "123.456.789-00",
+    "email": "joao.silva@backing.lab",
+    "saldo": 2540.75,
+    "transacoes": [
+      {
+        "data": "2026-05-28",
+        "descricao": "Salário",
+        "valor": 4500.0
+      },
+      {
+        "data": "2026-05-29",
+        "descricao": "Supermercado Extra",
+        "valor": -312.4
+      },
+      {
+        "data": "2026-05-30",
+        "descricao": "Pix para Maria",
+        "valor": -150.0
+      },
+      {
+        "data": "2026-05-31",
+        "descricao": "Netflix",
+        "valor": -39.9
+      }
+    ]
+  },
+  {
+    "id": 1002,
+    "senha": "maria2026",
+    "nome": "Maria Oliveira",
+    "cpf": "987.654.321-00",
+    "email": "maria.oliveira@backing.lab",
+    "saldo": 8721.1,
+    "transacoes": [
+      {
+        "data": "2026-05-27",
+        "descricao": "Transferência recebida",
+        "valor": 1500.0
+      },
+      {
+        "data": "2026-05-28",
+        "descricao": "Aluguel",
+        "valor": -1800.0
+      },
+      {
+        "data": "2026-05-30",
+        "descricao": "Pix de João",
+        "valor": 150.0
+      }
+    ]
+  },
+  {
+    "id": 1003,
+    "senha": "carlos@pass",
+    "nome": "Carlos Mendes",
+    "cpf": "456.789.123-00",
+    "email": "carlos.mendes@backing.lab",
+    "saldo": 152340.55,
+    "transacoes": [
+      {
+        "data": "2026-05-15",
+        "descricao": "Investimento CDB resgatado",
+        "valor": 50000.0
+      },
+      {
+        "data": "2026-05-20",
+        "descricao": "Compra de ações PETR4",
+        "valor": -12500.0
+      },
+      {
+        "data": "2026-05-25",
+        "descricao": "Pagamento fornecedor",
+        "valor": -8750.0
+      }
+    ]
+  },
+  {
+    "id": 1004,
+    "senha": "admin",
+    "nome": "Ana Diretora",
+    "cpf": "111.222.333-44",
+    "email": "ana.diretora@backing.lab",
+    "admin": true,
+    "saldo": 987654.32,
+    "transacoes": [
+      {
+        "data": "2026-05-10",
+        "descricao": "Folha de pagamento",
+        "valor": -450000.0
+      },
+      {
+        "data": "2026-05-12",
+        "descricao": "Recebimento cliente",
+        "valor": 680000.0
+      },
+      {
+        "data": "2026-05-22",
+        "descricao": "Pagamento de impostos",
+        "valor": -98000.0
+      }
+    ]
+  }
+]

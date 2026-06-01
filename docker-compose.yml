@@ -1,0 +1,9 @@
+services:
+  banco-mente:
+    build: .
+    container_name: banco-mente-idor
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    restart: unless-stopped

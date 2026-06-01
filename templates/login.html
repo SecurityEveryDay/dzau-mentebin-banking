@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="card" style="max-width: 420px; margin: 3rem auto;">
+    <h2 style="text-align:center;">Internet Banking</h2>
+    <form method="post">
+        <label>Número de cliente</label>
+        <input type="text" name="id" required autofocus inputmode="numeric">
+
+        <label>Senha</label>
+        <input type="password" name="senha" required>
+
+        <button type="submit">Entrar</button>
+    </form>
+    <a class="link-secundario" href="{{ url_for('cadastro') }}">Ainda não tem conta? Abrir conta</a>
+</div>
+{% endblock %}

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <title>MenteBinaria Banking</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icon_1.png') }}">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+        header {
+            background: #0f172a;
+            color: #fff;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header .marca { display: flex; align-items: center; gap: 0.75rem; }
+        header .marca img { width: 36px; height: 36px; border-radius: 6px; }
+        header h1 { margin: 0; font-size: 1.25rem; }
+        header a { color: #93c5fd; text-decoration: none; margin-left: 1rem; }
+        main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        .saldo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #047857;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+        th, td { padding: 0.6rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background: #f9fafb; font-size: 0.85rem; color: #4b5563; text-transform: uppercase; }
+        .valor-pos { color: #047857; font-weight: 600; }
+        .valor-neg { color: #b91c1c; font-weight: 600; }
+        input, button {
+            padding: 0.6rem 0.8rem;
+            font-size: 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            width: 100%;
+            margin-top: 0.4rem;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+        button:hover { background: #1d4ed8; }
+        label { font-weight: 600; font-size: 0.9rem; }
+        .alerta {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            color: #065f46;
+            margin-bottom: 1rem;
+        }
+        .erro {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            color: #991b1b;
+            margin-bottom: 1rem;
+        }
+        .link-secundario {
+            display: block;
+            margin-top: 1rem;
+            text-align: center;
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .link-secundario:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="marca">
+            <img src="{{ url_for('static', filename='icon_1.png') }}" alt="MenteBinaria Banking">
+            <h1>MenteBinaria Banking</h1>
+        </div>
+        <nav>
+            {% if session.usuario_id %}
+                <a href="{{ url_for('conta', id=session.usuario_id) }}">Minha conta</a>
+                <a href="{{ url_for('pix') }}">Pix</a>
+                <a href="{{ url_for('recarga') }}">Recarga</a>
+                {% if is_admin %}<a href="{{ url_for('admin_logs') }}">Painel</a>{% endif %}
+                <a href="{{ url_for('logout') }}">Sair</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Entrar</a>
+                <a href="{{ url_for('cadastro') }}">Abrir conta</a>
+            {% endif %}
+        </nav>
+    </header>
+    <main>
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+            {% for categoria, msg in mensagens %}
+                <div class="{{ categoria }}">{{ msg }}</div>
+            {% endfor %}
+        {% endwith %}
+        {% block conteudo %}{% endblock %}
+    </main>
+</body>
+</html>
