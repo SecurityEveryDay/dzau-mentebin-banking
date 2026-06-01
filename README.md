@@ -2,7 +2,8 @@
 
 Aplicação Flask em Docker para demonstrar, em sala de aula, vulnerabilidades de
 aplicação web cobrindo a **tríade CIA** (Confidencialidade, Integridade,
-Disponibilidade) e duas falhas clássicas do OWASP Top 10.
+Disponibilidade) e falhas clássicas do OWASP Top 10 (A01 Broken Access Control,
+A03 Injection, A04 Insecure Design).
 
 > Ambiente didático **propositalmente inseguro**. Não deve ser exposto na
 > internet nem rodado em produção.
@@ -106,16 +107,62 @@ Roteiro:
 
 ### 2. SQL Injection (Confidencialidade / Autenticação) — `POST /login`
 
-O `/login` monta a query por concatenação de strings com o que o usuário envia.
-Payloads testados:
+OWASP A03:2021 — Injection. O endpoint `/login` monta a query SQL por
+**concatenação direta de strings** com o que o usuário envia no formulário, sem
+qualquer sanitização ou uso de prepared statements.
 
-| Campo "Número de cliente" | Senha          | Efeito                              |
-|---------------------------|----------------|-------------------------------------|
-| `1004' --`                | qualquer       | login como **admin** (Ana Diretora) |
-| `' OR '1'='1' --`         | qualquer       | login como o primeiro usuário       |
-| qualquer                  | `' OR '1'='1`  | mesmo efeito, injetando pela senha  |
+Trecho vulnerável em `app.py`:
 
-Após o bypass, o atacante pode encadear com IDOR alterando `?id=` na URL.
+```python
+sql = (
+    "SELECT id, nome FROM usuarios "
+    "WHERE id = '" + raw_id + "' AND senha = '" + senha + "'"
+)
+row = DB.execute(sql).fetchone()
+```
+
+Como o conteúdo dos dois campos é colocado direto na query, o atacante pode
+"fechar" a string com uma aspa simples e injetar lógica SQL arbitrária. O
+truque clássico é comentar o resto da query com `--`, eliminando a verificação
+de senha.
+
+**Payloads para demonstrar em aula:**
+
+| Campo "Número de cliente"            | Senha           | SQL resultante                                                                   | Efeito                                  |
+|--------------------------------------|-----------------|----------------------------------------------------------------------------------|-----------------------------------------|
+| `1004' --`                           | qualquer        | `... WHERE id = '1004' --' AND senha = '...'`                                    | login como **admin** (Ana Diretora)     |
+| `' OR '1'='1' --`                    | qualquer        | `... WHERE id = '' OR '1'='1' --' AND senha = '...'`                             | login como o primeiro usuário (1001)    |
+| qualquer                             | `' OR '1'='1`   | `... WHERE id = '...' AND senha = '' OR '1'='1'`                                 | mesmo efeito, injetando pela senha      |
+| `1001' UNION SELECT '1004','Hacker'` | qualquer        | `... UNION SELECT '1004','Hacker' --`                                            | sessão fica com id 1004 sem credenciais |
+
+Roteiro:
+
+1. Acesse a tela de login
+2. Em **Número de cliente** digite: `1004' --`
+3. Em **Senha** digite qualquer coisa
+4. Você cai diretamente na conta da Ana Diretora (admin), sem ter sabido a
+   senha real
+
+**Encadeamento com IDOR:** depois do bypass, troque o `?id=` na URL para ver
+qualquer outra conta — duas falhas em sequência, ataque realista.
+
+**Detecção via painel `/admin/logs`:** payloads suspeitos com aspas
+desbalanceadas geram erro de sintaxe SQL e aparecem como `login_falha` com o
+campo `tentativa_id_invalido` preenchido com o que foi enviado.
+
+**Como corrigir** (discussão de aula):
+
+```python
+# Prepared statement / parameter binding — SQLite escapa automaticamente
+row = DB.execute(
+    "SELECT id, nome FROM usuarios WHERE id = ? AND senha = ?",
+    (raw_id, senha),
+).fetchone()
+```
+
+Outras camadas de defesa: ORM (SQLAlchemy), validação de input,
+princípio de menor privilégio no usuário do banco, hashing de senha
+(bcrypt/argon2), e WAF.
 
 ### 3. Parameter Tampering (Integridade) — `POST /recarga`
 
