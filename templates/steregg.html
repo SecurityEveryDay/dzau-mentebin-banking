@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="card alerta" style="text-align:center; padding:3rem 2rem;">
+    <h2 style="margin-top:0;">Parabéns, você achou o steregg!</h2>
+    <p>Você leu o <code>robots.txt</code>, viu um caminho marcado como "não indexar" e foi até ele.
+       Esse é exatamente o primeiro passo de qualquer reconhecimento.</p>
+    <p><strong>Token:</strong> <code>STEREGG{robots_txt_nao_e_controle_de_acesso}</code></p>
+    <p style="font-size:0.9rem; color:#475569;">
+        Lição: <code>Disallow</code> é só um pedido aos bots. Quem protege um recurso é o servidor,
+        com autenticação e autorização.
+    </p>
+</div>
+{% endblock %}

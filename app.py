@@ -7,7 +7,7 @@ import threading
 import urllib.request
 from datetime import date, datetime, timedelta
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, Response, render_template, request, redirect, url_for, session, flash
 
 # ============================================================================
 # AMBIENTE DIDÁTICO PROPOSITALMENTE INSEGURO — NÃO USAR EM PRODUÇÃO
@@ -248,10 +248,11 @@ def injetar_contexto():
     }
 
 
-@app.before_request
-def log_request():
+@app.after_request
+def log_request(response):
+    # Gravado após a resposta para incluir o status HTTP (200, 302, 503...).
     if request.path.startswith("/static") or request.path.startswith("/admin/logs"):
-        return
+        return response
     uid = session.get("usuario_id")
     nome = USUARIOS[uid]["nome"] if uid in USUARIOS else None
     path = request.full_path
@@ -263,8 +264,10 @@ def log_request():
         "nome":    nome,
         "method":  request.method,
         "path":    path,
+        "status":  response.status_code,
         "ip":      request.headers.get("X-Forwarded-For", request.remote_addr),
     })
+    return response
 
 
 @app.route("/")
@@ -571,6 +574,33 @@ def admin_logs_limpar():
             os.remove(ARQUIVO_LOGS)
     flash("Logs apagados.", "alerta")
     return redirect(url_for("admin_logs"))
+
+
+# =====================================================================
+# STEREGG — easter egg de reconhecimento
+# -----------------------------------------------------------------
+# O robots.txt é público e lido por qualquer ferramenta de recon. Ele
+# lista caminhos que o dono quer manter fora dos buscadores, o que
+# costuma entregar justamente os caminhos interessantes para um atacante.
+#
+# Lição: robots.txt NÃO é controle de acesso. O Disallow é só uma
+# convenção que bots bem-comportados respeitam; não bloqueia ninguém.
+# Para proteger um recurso de verdade: autenticação e autorização no
+# servidor (como em /admin/logs).
+# =====================================================================
+@app.route("/robots.txt")
+def robots_txt():
+    conteudo = (
+        "User-agent: *\n"
+        "Disallow: /admin/\n"
+        "Disallow: /diretoria-reservada/\n"
+    )
+    return Response(conteudo, mimetype="text/plain")
+
+
+@app.route("/diretoria-reservada/")
+def diretoria_reservada():
+    return render_template("steregg.html")
 
 
 if __name__ == "__main__":

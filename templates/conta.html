@@ -2,19 +2,21 @@
 {% block conteudo %}
 
 {% if usuario %}
+<h1 class="pagina-titulo">Olá, {{ usuario.nome.split()[0] }}</h1>
+
 <div class="card">
-    <h2>Dados da Conta</h2>
-    <table>
+    <h2>Saldo disponível</h2>
+    <p class="saldo">R$ {{ "%.2f"|format(usuario.saldo)|replace(".", ",") }}</p>
+</div>
+
+<div class="card">
+    <h2>Dados da conta</h2>
+    <table class="tabela-dados">
         <tr><th>Número de cliente</th><td>{{ usuario.id }}</td></tr>
         <tr><th>Nome</th><td>{{ usuario.nome }}</td></tr>
         <tr><th>CPF</th><td>{{ usuario.cpf }}</td></tr>
         <tr><th>E-mail</th><td>{{ usuario.email }}</td></tr>
     </table>
-</div>
-
-<div class="card">
-    <h2>Saldo disponível</h2>
-    <p class="saldo">R$ {{ "%.2f"|format(usuario.saldo)|replace(".", ",") }}</p>
 </div>
 
 <div class="card">

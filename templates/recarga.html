@@ -13,13 +13,15 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 1rem;
-        border: 2px solid #e5e7eb;
-        border-radius: 8px;
+        margin-top: 0;
+        padding: 0.9rem;
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
         font-weight: 600;
-        font-size: 1.1rem;
+        font-size: 1.05rem;
+        color: var(--text);
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: border-color 0.15s, background 0.15s, color 0.15s;
         background: #fff;
     }
     .valor-opcao input {
@@ -29,38 +31,40 @@
     }
     .valor-opcao:hover { border-color: #93c5fd; }
     .valor-opcao.selecionada {
-        border-color: #2563eb;
-        background: #eff6ff;
-        color: #1e40af;
+        border-color: var(--brand-500);
+        background: var(--brand-100);
+        color: var(--info-700);
     }
     .resumo {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-top: 1.5rem;
-        padding: 1rem;
-        background: #f9fafb;
-        border-radius: 6px;
-        font-size: 1.1rem;
+        padding: 1rem 1.1rem;
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.97rem;
+        color: #334155;
     }
     .resumo .total {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #047857;
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--ok-600);
     }
 </style>
 
 <div class="card" style="max-width:560px; margin:0 auto;">
-    <h2 style="margin-top:0;">Recarga de celular</h2>
-    <p style="color:#6b7280; margin-top:-0.5rem;">
-        Saldo disponível: <b>R$ {{ "%.2f"|format(usuario.saldo)|replace(".", ",") }}</b>
+    <h2>Recarga de celular</h2>
+    <p style="color:var(--text-muted); margin:-0.5rem 0 1rem 0; font-size:0.93rem;">
+        Saldo disponível: <b style="color:var(--text);">R$ {{ "%.2f"|format(usuario.saldo)|replace(".", ",") }}</b>
     </p>
 
     <form method="post" id="form-recarga">
         <label>Número do celular</label>
         <input type="tel" name="numero" required placeholder="(11) 99999-9999">
 
-        <label style="margin-top:1.2rem; display:block;">Valor da recarga</label>
+        <label>Valor da recarga</label>
         <div class="valores-grid">
             {% for v in [20, 30, 50, 100, 200] %}
             <label class="valor-opcao" data-valor="{{ v }}">
